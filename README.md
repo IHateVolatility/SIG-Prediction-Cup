@@ -4,8 +4,7 @@ DRAFT, Nov 4 2026, written before settlement. Things to fill in or decide:
   - "How it was built" now says the code was written with Claude Code and that it ran the night shift; cut or reword if you'd rather not
   - the server hunt: add how many servers/regions you tried if you remember (search for TODO servers)
   - sunny-acorn: say whether you sent SIG the email (search for TODO email)
-  - links: the relative links below assume this sits in the sigmm repo; change them if the write-up moves to its own repo
-Figures: uv run python writeup/make_figures.py (data in writeup/data, built by prep_data.py)
+Figures: uv run python make_figures.py (data in data/, built by prep_data.py)
 -->
 
 # Market making the 2026 midterms on SIG's prediction market
@@ -105,17 +104,17 @@ I didn't give up on tight quoting easily. On October 3 the big sweeps were fadin
 
 Every fill of a deep order turns cash into a position that only pays out at settlement on November 4. On October 1, sweeps took free cash from $55k to $1k within half an hour. From then on, the bot was always choosing between keeping cash free for the next sweep and holding positions that were worth more than SIG would pay for them today.
 
-On October 6 the balance was 17 dollars. I asked whether we should just start over from scratch with something simpler, because there were so many layers that I couldn't tell anymore what was doing what. The answer was in the numbers: $844k was sitting in five positions that pay out at settlement, the biggest a 500k-share short on "Republicans win the Rhode Island Senate". Selling them would have cost 12-18% of their value. The cash had turned into positions, and getting it back had a price.
+On October 6 the balance was 17 dollars. I seriously considered starting over with something simpler, because there were so many layers that I couldn't tell anymore what was doing what. The numbers talked me out of it: $844k was sitting in five positions that pay out at settlement, the biggest a 500k-share short on "Republicans win the Rhode Island Senate". Selling them would have cost 12-18% of their value. The cash had turned into positions, and getting it back had a price.
 
 That price shows up as the red bar in the edge chart, about $1.0M of value given up over five weeks to free cash. It funded the fills in the blue bars, so it was worth it, but it was the biggest single cost and the hardest thing to tune. A change that looked good in simulation (closing positions from 1,000 shares instead of 2,000) lost $7.6k in a replay of the real code, and I rolled it back.
 
-The simulators ended up mattering more than any single strategy idea. My first one walked sweeps through stored book snapshots and overstated how deep they reach, which pushed me to a 40% return floor that was far too strict. The replacement, `stinksim`, treats a sweep as a size that gets conserved, and I calibrated it against real fills until it landed within 1.1-1.2x of them. It was slow, and when a speed-up attempt came back 1.3x faster I said that was nothing, I wanted 10-100x. The numba version, `fastsim`, ran 25x faster with the same fills, which meant I could test changes over many windows instead of one. A change only went live after it won in several windows, in the replay of the real code, and under a stress setting.
+The simulators ended up mattering more than any single strategy idea. My first one walked sweeps through stored book snapshots and overstated how deep they reach, which pushed me to a 40% return floor that was far too strict. The replacement, `stinksim`, treats a sweep as a size that gets conserved, and I calibrated it against real fills until it landed within 1.1-1.2x of them. It was slow, and the first attempt to speed it up only gained 1.3x. The numba version, `fastsim`, ran 25x faster with the same fills, which meant I could test changes over many windows instead of one. A change only went live after it won in several windows, in the replay of the real code, and under a stress setting.
 
 ## The quiet weeks
 
 From mid October the books settled down and the bot mostly ran by itself, with no commits at all for over two weeks. By October 24 we were #4 of 1,771 on the all-time board, $155k behind the leader, and #1 on the weekly board.
 
-On October 29 I sent a screenshot of market 949 with the question "what happened here??". Someone had bought hard, our ask sold them 11,168 shares at 49c, and three seconds later our own take layer bought exactly those shares back at 49.5c. The cause was a setting from the October 1 cash panic that let the bot close any position at up to 4c worse than fair. In markets where one of our own asks rested in that range, the take tried to buy from it, SIG's self-match prevention filled nothing, and the engine retried every 2-3 seconds: 13,239 takes in six hours, nearly the whole write budget, for weeks. A four-week-old emergency setting had been quietly eating most of the rate limit.
+On October 29 I noticed something odd in market 949. Someone had bought hard, our ask sold them 11,168 shares at 49c, and three seconds later our own take layer bought exactly those shares back at 49.5c. The cause was a setting from the October 1 cash panic that let the bot close any position at up to 4c worse than fair. In markets where one of our own asks rested in that range, the take tried to buy from it, SIG's self-match prevention filled nothing, and the engine retried every 2-3 seconds: 13,239 takes in six hours, nearly the whole write budget, for weeks. A four-week-old emergency setting had been quietly eating most of the rate limit.
 
 ## Getting ready for one night
 
@@ -199,6 +198,6 @@ The board can also be gamed. On October 2 an account jumped from about +$8k to +
 
 Five weeks, one person, about 130 commits, ~18k lines of Python and 298 tests. Most of the code was written together with Claude Code, an AI coding agent: I decided what to build and what to trade, and it did most of the typing and the data digging, and on election night it ran the desk while I slept. That changed what one person could build in five weeks, from a single quoting script to a full engine with a dashboard, replays and three simulators. The ideas that made the most money, the stinks and saving cash for election night, still came from staring at order books.
 
-The code is in [`src/sigmm`](../src/sigmm), the research in [`research/`](../research) (the simulators `stinksim`, `fastsim` and `stalesim`, the replays, and the leaderboard reconstruction), and this write-up's figures in [`make_figures.py`](make_figures.py).
+The engine and the research stay private. The figures in this write-up come from [`make_figures.py`](make_figures.py).
 
 Thanks to SIG for running the Cup. It was a lot of fun.
