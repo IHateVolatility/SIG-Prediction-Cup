@@ -4,7 +4,7 @@ DRAFT, Nov 4 2026, written before settlement. Things to fill in or decide:
   - "How it was built" now says the code was written with Claude Code and that it ran the night shift; cut or reword if you'd rather not
   - the server hunt: add how many servers/regions you tried if you remember (search for TODO servers)
   - sunny-acorn: say whether you sent SIG the email (search for TODO email)
-Figures: uv run python make_figures.py (data in data/, built by prep_data.py)
+Figures: uv run python make_figures.py (data/ stays in the private repo, built by prep_data.py)
 -->
 
 # Market making the 2026 midterms on SIG's prediction market
@@ -198,6 +198,6 @@ The board can also be gamed. On October 2 an account jumped from about +$8k to +
 
 Five weeks, one person, about 130 commits, ~18k lines of Python and 298 tests. Most of the code was written together with Claude Code, an AI coding agent: I decided what to build and what to trade, and it did most of the typing and the data digging, and on election night it ran the desk while I slept. That changed what one person could build in five weeks, from a single quoting script to a full engine with a dashboard, replays and three simulators. The ideas that made the most money, the stinks and saving cash for election night, still came from staring at order books.
 
-The engine and the research stay private. The figures in this write-up come from [`make_figures.py`](make_figures.py).
+The engine, the research and the trade data stay private. The figures in this write-up come from [`make_figures.py`](make_figures.py).
 
 Thanks to SIG for running the Cup. It was a lot of fun.
