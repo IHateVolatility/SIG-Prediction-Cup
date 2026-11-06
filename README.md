@@ -19,7 +19,7 @@ I entered with an automated market maker that we started building the day before
 
 A quick word on "we", because you'll see a lot of it. "I" is me, Teun. "We" is me and Claude, the AI that wrote most of the code: 134 of the project's 135 commits have its name on them. Claude doesn't sleep, had no exams and never once asked for a share of the SUSQies. When I write "we fixed a bug", I pointed at something weird and Claude went digging. When I write "we introduced a bug", there are also two suspects, and I've decided not to investigate further.
 
-Almost nothing went the way we planned on day one. This is the story of what happened instead.
+Almost nothing went the way we planned on day one.
 
 ## The day before
 
@@ -76,15 +76,15 @@ I didn't give up on tight quoting easily. On October 3 the big sweeps were fadin
 
 ## Running out of cash
 
-Every fill of a deep order turns cash into a position that only pays out at settlement. On October 6 the balance was 17 dollars. I seriously considered starting over with something simpler, because there were so many layers that I couldn't tell anymore what was doing what. The numbers talked me out of it: $844k was sitting in five positions, the biggest a 500k-share short on "Republicans win the Rhode Island Senate". Selling them would have cost 12-18% of their value. The cash had turned into positions, and getting it back had a price.
+Every fill of a deep order turns cash into a position that only pays out at settlement. On October 6 the balance was 17 dollars. I seriously considered starting over with something simpler, because there were so many layers that I couldn't tell anymore what was doing what. The numbers talked me out of it: $844k was sitting in five positions, the biggest a 500k-share short on "Republicans win the Rhode Island Senate". Selling them would have cost 12-18% of their value, so we mostly didn't.
 
-Over five weeks that price came to about $1.1M of value given up to free cash. It was worth it, because that cash funded the fills above, but it was the biggest single cost and the hardest thing to tune. So we built simulators to tune it. The first one overstated how deep sweeps reach and pushed us to a return floor that was far too strict. The replacement was calibrated against real fills until it landed within 1.1-1.2x of them, and a numba rewrite made it 25x faster, so a change could be tested over many windows instead of one. A change only went live after it won in several windows, in a replay of the real code, and under a stress setting.
+Over five weeks, freeing up cash cost us about $1.1M of value. It paid for the fills above, so fine, but it was our biggest cost and the hardest thing to tune. We built simulators for it. The first one was just wrong: it overstated how deep sweeps reach and pushed us to a return floor that was far too strict. The next one we calibrated against real fills until it landed within 1.1-1.2x of them, and a numba rewrite made it 25x faster. After that, a change had to win in several windows, in a replay of the real code and under a stress setting before it went live.
 
 ## Getting ready for one night
 
-Results night was the obvious opportunity. When a race is called, its loser goes to zero on Polymarket and Kalshi within seconds, but the books here are full of orders people placed days ago and aren't watching. A scan of all 237 books on October 29 found about $40M of expected profit sitting at levels a call would pay at least 20c a share on. Nobody had the cash to take more than a sliver of it. Cash would be the limit again.
+Results night was the obvious opportunity. When a race is called, its loser goes to zero on Polymarket and Kalshi within seconds, but the books here are full of orders people placed days ago and aren't watching. A scan of all 237 books on October 29 found about $40M of expected profit sitting at levels a call would pay at least 20c a share on. Nobody had the cash to take more than a sliver of it.
 
-So we started hoarding, from $165k to $324k in one round. Two days before the election we built one more simulator that played out the night with every quote stale and other bots competing for the same levels. Its first result was a warning: our own 7,000 resting orders were among the biggest stale quotes around, and other bots would pick them off for about $730k. The night plan started with one global cancel-all at 21:00 UTC.
+So we started hoarding, from $165k to $324k in one round. Two days before the election we built one more simulator that played out the night with every quote stale and other bots competing for the same levels. The first thing it told us was that our own 7,000 resting orders were among the biggest stale quotes around, and that other bots would pick them off for about $730k. So the night plan started with one global cancel-all at 21:00 UTC.
 
 One more idea of mine: if election night brings more panicked traders, the stinks should stay, and be much bigger. At 21:22 UTC they went to 1M shares at 1c and 99c in every market.
 
@@ -95,18 +95,18 @@ One more idea of mine: if election night brings more panicked traders, the stink
   <img src="figures/night-light.png" alt="Gain since 21:26 UTC on election night against 48 simulated nights: actual +$458k by 16:24 the next day, simulation median about +$310k">
 </picture>
 
-The biggest night of the competition fell in my exam week. Staying up all night wasn't an option, so I had to do something a little uncomfortable: go to bed in the middle of it.
+Election night fell in my exam week, so staying up for all of it wasn't an option.
 
-The first hours I watched. Soon after the first polls closed at 23:00 UTC, the stinks started filling. At 23:53 someone bought 41k shares of FL-09 R from our 99c ask while the race was a coin flip. It went to the Democrat: +$40k. Around midnight other people caught on and started placing big orders one tick in front of our stinks, so we added 50k-share stinks in front of them. Then came the worst idea of the night. Takers were buying near-certain losers at 10c and up, so the bot started selling those longshots at 6c through fair. In ten minutes it spent about $500k of cash at a 6.9% return, which was worse than keeping that cash for later calls.
+I did watch the start. Soon after the first polls closed at 23:00 UTC, the stinks started filling. At 23:53 someone bought 41k shares of FL-09 R from our 99c ask while the race was a coin flip. It went to the Democrat: +$40k. Around midnight other people caught on and started placing big orders one tick in front of our stinks, so we added 50k-share stinks in front of them. Then came the worst idea of the night. Takers were buying near-certain losers at 10c and up, so the bot started selling those longshots at 6c through fair. In ten minutes it spent about $500k of cash at a 6.9% return, which was worse than keeping that cash for later calls.
 
-Soon after that I went to sleep and handed everything over. My last instruction was that Claude was completely in control of the system's health and the trading, and that it shouldn't ask me anything anymore. It checked the engine every ten minutes, and it deployed three fixes while I slept. Two of the best fills came during those hours:
+Then I went to bed, in the middle of the biggest night of the competition. I told Claude it was in control of the system and the trading and that it shouldn't ask me anything anymore. It checked the engine every ten minutes and deployed three fixes while I slept. Two of the best fills came during those hours:
 
 - 02:16 UTC: 244k shares of Alaska Senate R sold into our 1c bid, fair 17c: +$55k.
 - 06:09 UTC: Mississippi Senate D dumped into our 2c bid, shortly before the race moved toward the Democrats.
 
-I woke up to a log of what it had done and why, which beats most morning-afters. The stinks were the night's best strategy by far: about +$186k on $17k of cash.
+In the morning there was a log of what it had done and why. The stinks were the night's best strategy by far: about +$186k on $17k of cash.
 
-The last hour had one more gift. At 16:23 UTC, ten minutes after we'd spent our last cash, someone sold 88k shares of Rhode Island Senate D into our resting bids at 9.5-10c, with the fair at 99.8c. That's +$79k, the single best fill of the competition. Rhode Island's Senate race ended up worth $194k across its two markets, more than any other race, and it had been in the top holdings since the first week. Across 236 markets only one lost real money: MN-01 R, −$63k, where we bought 138k shares at 64.5c on election night. Remember that race.
+At 16:23 UTC on the last day, ten minutes after we'd spent our last cash, someone sold 88k shares of Rhode Island Senate D into our resting bids at 9.5-10c, with the fair at 99.8c. That's +$79k, the single best fill of the competition. Rhode Island's Senate race ended up worth $194k across its two markets, more than any other race, and it had been in the top holdings since the first week. Only one market of the 236 lost real money: MN-01 R, −$63k, where we bought 138k shares at 64.5c on election night.
 
 ## Reading the other books
 
@@ -117,9 +117,9 @@ The last hour had one more gift. At 16:23 UTC, ten minutes after we'd spent our 
 
 The leaderboard values open positions at about a four-hour average of traded prices, which lags reality by hours and swings with single small trades. Our board number sat $100-300k below our value at fair for most of the last day. So the board alone couldn't tell us where we really stood, and we started tracking it ourselves.
 
-From October 24 we logged the top of the board every minute, along with the prices used to value our own positions. You can't see anyone's positions, only their P&L and trade count. But if a market's price moves 1c and nothing else moves, and an account makes $9k that same minute without trading, that account holds about 900k shares. Do this across enough quiet moments and you can read a book you were never meant to see. As a check, the same test on markets an account clearly doesn't hold comes out near zero.
+From October 24 we logged the top of the board every minute, along with the prices used to value our own positions. You can't see anyone's positions, only their P&L and trade count. But if a market's price moves 1c and nothing else moves, and an account makes $9k that same minute without trading, that account holds about 900k shares. Do that for enough quiet moments and you get a decent guess at someone's book. The same test on markets an account clearly doesn't hold comes out near zero, so it isn't just finding noise.
 
-It showed two very different competitors. steady-ember holds a roughly 1.3M-share bet on Democrats winning the Mississippi Senate, bought around 20c, and hasn't traded since before the election. steady-finch is long about 800k shares of Democrats winning the Senate and short about 700k of Republicans winning it. Both bets came in.
+steady-ember holds a roughly 1.3M-share bet on Democrats winning the Mississippi Senate, bought around 20c, and hasn't traded since before the election. steady-finch is long about 800k shares of Democrats winning the Senate and short about 700k of Republicans winning it. Both bets came in.
 
 That's why I expect us to drop to third. As I write this, 187 of 237 markets have settled, and most of our money has already landed. Their big markets haven't, and they're still valued well below what they'll pay: Republicans winning the Senate still counts at 17c on a contract Kalshi has already resolved to zero. Each of them has something like $200k still to come. We have about $30k.
 
@@ -128,32 +128,25 @@ That's why I expect us to drop to third. As I write this, 187 of 237 markets hav
   <img src="figures/standings-light.png" alt="Board now against estimated final P&L: steady-finch about $1.56M, steady-ember about $1.52M, us $1.45M">
 </picture>
 
-We put ranges on it by resampling the position estimates and simulating the open races at Kalshi's prices: about 80% third, 15% second and 4% first. The ranges are soft, especially for steady-finch. And yes, our one route to first runs through MN-01, the only race that lost us real money. If the Republican comes back there, we win about $90k and steady-finch seems to lose about $240k. Kalshi gives it about 4%.
+We put ranges on it by resampling the position estimates and simulating the open races at Kalshi's prices: about 80% third, 15% second and 4% first. The ranges are soft, especially for steady-finch. Our only route to first is MN-01, the one race that lost us real money. If the Republican comes back there, we win about $90k and steady-finch seems to lose about $240k. Kalshi gives that about 4%, so I'm not counting on it.
 
-## How Claude and I worked
+## Working with Claude
 
-This is the part that surprised me most. About 18k lines of Python, 298 tests, a dashboard, replays and three simulators, in five weeks, next to my studies. I couldn't have done that alone.
+I already worked this way before the Cup, so for me this was just how the project got built. It's probably what people will ask about though.
 
-The split was simple. I decided what to build and what to trade, and Claude Code wrote the code, dug through the data and ran the experiments. A typical loop was me saying something looked off on the dashboard, Claude pulling the fills and logs, finding the cause, writing a failing test, fixing it and deploying. The ideas that made the most money, the stinks and saving cash for election night, came from staring at order books. The speed came from not having to do everything else by hand.
+Roughly 18k lines of Python, 298 tests, a dashboard, replays and three simulators in five weeks, during my studies. I decided what to build and what to trade. Claude Code wrote the code, went through the data and ran the experiments. Usually I'd see something weird on the dashboard and say so, and Claude would pull the fills and logs, find the cause, write a failing test, fix it and deploy. The stinks and saving cash for election night came from looking at order books.
 
-A few things made it work:
+What helped most was giving it eyes on the live system. `desk.py` prints the engine's status, positions, orders, fills and any market's book, and a small skill told Claude how to use it, so it could check things itself and didn't have to guess. It also kept short notes between sessions, 18 by the end, about things like settlement timing and not touching the other servers on my AWS account. There weren't many rules: tests pass before a deploy, and a restart keeps every resting order. Inside those it could commit, deploy and tune on its own.
 
-- **A desk tool.** `desk.py` shows the live engine's status, positions, orders, fills and any market's book in the terminal, and a small skill told Claude how to use it. From then on it could check the real system itself and stopped guessing.
-- **Memory.** Claude kept short notes between sessions, 18 by the end, on things like how settlement timing works and that it must never touch the other servers on my AWS account. New sessions started knowing what the last one had learned.
-- **Hard rules.** Tests pass before a deploy, and a restart must keep every resting order. Within those rules it could commit, deploy and tune on its own.
-- **Numbers first.** Claude can be confidently wrong in a very calm voice, so I kept asking for the number from the real data. I sometimes had OpenAI's Codex review the work as a second opinion, and simulators settled most arguments.
+It can be confidently wrong in a very calm voice, so I kept asking for the number from the real data. Sometimes I had OpenAI's Codex review the work as a second opinion.
 
-Claude also drafted this write-up from our conversations and the fills, and I edited it. The bad jokes are shared work.
+Claude also drafted this write-up from our conversations and the fills, and I edited it.
 
-## What I'd tell myself on September 30
+## What I'd do differently
 
-**Place the stinks, and make them big.** The edge on a young, thin exchange is in being there when someone makes a mistake, with size, at a price far from fair.
+If I could go back to September 30, I'd make the stinks much bigger from the first minute and spend an hour testing what the exchange really does with orders. Both of our expensive early mistakes were assumptions about cash that one hour against the real API would have caught.
 
-**Find out what the exchange actually does with your orders.** Two of our biggest early mistakes came from assuming how cash works. Both would have been caught in an hour of testing against the real API.
-
-**Think in return on cash.** When cash is limited, every strategy competes for the same dollars, and the price of freeing cash matters as much as the edge of the trade it funds.
-
-**Emergency settings need an expiry date.** A rule we added in the October 1 panic was still quietly eating most of our rate limit four weeks later. One market showed it: 13,239 pointless takes in six hours.
+I'd also think in return on cash earlier. For weeks I looked at P&L per strategy, while every strategy was fighting over the same dollars. And emergency settings should expire: a rule from the October 1 panic was still eating most of our rate limit four weeks later, with 13,239 pointless takes in six hours in one market.
 
 The engine, the research and the trade data stay private. The figures come from [`make_figures.py`](make_figures.py).
 
