@@ -52,7 +52,7 @@ An hour in, the numbers didn't add up. The balance read 131,491 with about $57k 
 
 So a 1M-share stink at 99c costs nothing until it fills, and when it fills it costs 1c a share for something worth a dollar. That evening the stinks went from 3,000 shares to 20,000, and a new layer of "deep" orders went in that could each reach 100k. Even so, the account in first place had about four times our P&L by the evening, mostly, I think, because their stinks were bigger than ours.
 
-The catch came four days later, and it was expensive. An order is checked against the balance minus your other orders in that same market. For the first four days, 97-99% of our placements got an "ok" back without ever resting. The dashboard showed hundreds of orders going out every minute and almost none on the book. Once the engine filtered out orders that wouldn't be admitted, the same write budget went to orders that could actually fill. It's the most expensive bug I've had in any project, and on the dashboard everything looked busy and fine.
+The catch came four days later. An order is checked against the balance minus your other orders in that same market. On October 5 we found that 97-99% of our placements, 200-290 a minute, were getting an "ok" back without ever resting. The dashboard showed hundreds of orders going out and almost none on the book. Once the engine filtered out orders that wouldn't be admitted, the same write budget went to orders that could actually fill. On the dashboard everything had looked busy and fine.
 
 ## Where the money came from
 
