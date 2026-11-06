@@ -159,7 +159,7 @@ def equity_curve(th, mode):
     bx.yaxis.set_major_formatter(mticker.FuncFormatter(money))
     bx.set_ylim(0, None)
     bx.set_ylabel("free cash", color=th["ink2"])
-    bx.text(0.005, 0.92, "Cash was what limited us: an order SIG can't pay for doesn't rest", transform=bx.transAxes,
+    bx.text(0.005, 0.92, "Cash was what limited us: an order we can't pay for doesn't rest", transform=bx.transAxes,
             color=th["ink2"], fontsize=9.5, va="top")  # fmt: skip
     bx.xaxis.set_major_locator(mdates.WeekdayLocator(byweekday=mdates.MO, tz=UTC))
     bx.xaxis.set_major_formatter(mdates.DateFormatter("%b %d", tz=UTC))
@@ -184,7 +184,7 @@ def daily(th, mode):
     ax.axhline(0, color=th["axis"], lw=1, zorder=4)
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(money))
     ax.set_title("Most of the money came in on five days")
-    subtitle(ax, th, "What each day's trades are worth at today's fairs (≈ settlement). Positive: we bought below / sold above.")
+    subtitle(ax, th, "What each day's trades are worth at the final results. Positive: we bought below / sold above.")
     for d, x in zip(days, v, strict=True):
         if abs(x) > 100_000:
             ax.text(d, x + 9000, money(x), ha="center", va="bottom", fontsize=9.5, color=th["ink"], weight="bold")
@@ -240,7 +240,7 @@ def edge_buckets(th, mode):
     ax.set_xlim(-1.75e6, 2.05e6)
     ax.grid(axis="y", visible=False)
     ax.set_title("The edge was in being far from fair, and freeing cash cost a lot of it")
-    subtitle(ax, th, "Every fill by how far through the fair it traded, valued at today's fairs")
+    subtitle(ax, th, "Every fill by how far through the fair it traded, valued at the final results")
     save(fig, "edge_buckets", mode)
 
 
@@ -271,7 +271,7 @@ def fill_map(th, mode):
     ax.set_xlabel("fair value of the market when the fill happened (¢)")
     ax.set_ylabel("edge at the fill (¢ a share, our side)")
     ax.set_title("34,555 fills, and the handful that mattered")
-    subtitle(ax, th, "Each dot is one fill: how much better than fair we traded, sized by shares, coloured by its worth at today's fairs")
+    subtitle(ax, th, "Each dot is one fill: how much better than fair we traded, sized by shares, coloured by its worth at the final result")
     for f0, e, text, xy in [
         (91.5, 91.0, "Oct 1: 43k U.S. House D bought at 0.5c, fair 91c", (52, 97)),
         (55.1, 43.9, "Election night: 41k FL-09 R sold\nto someone at 99c, fair 55c", (63, 46)),
@@ -288,7 +288,7 @@ def fill_map(th, mode):
     cb = fig.colorbar(sc, ax=ax, shrink=0.6, pad=0.015, format=mticker.FuncFormatter(money), extend="both")
     cb.outline.set_visible(False)
     cb.ax.tick_params(colors=th["ink2"], size=0)
-    cb.set_label("worth at today's fair", color=th["ink2"])
+    cb.set_label("worth at the final result", color=th["ink2"])
     save(fig, "fill_map", mode)
 
 
@@ -335,7 +335,7 @@ def book_ladder(th, mode):
     ax.text(-7.4, ys[-1] - 0.55, "fair value: 0.1¢. The AP had called the race for the Republican.",
             color=th["ink"], fontsize=10.5, weight="bold", va="top")  # fmt: skip
     ax.set_title("What our orders looked like on a decided race")
-    subtitle(ax, th, "SIG book for 'Will the Independent win the Montana Senate?', Nov 4 12:47 UTC (bar length: log of shares)")
+    subtitle(ax, th, "Book for 'Will the Independent win the Montana Senate?', Nov 4 12:47 UTC (bar length: log of shares)")
     row = {p: y for y, (p, n, o) in zip(ys, rows, strict=True) if n >= 0}
     for p, text in [
         (99.0, "the stink: 1M shares at 99c. Costs $10k of cash, and only if\nsomeone actually buys all of it from us"),
@@ -346,7 +346,7 @@ def book_ladder(th, mode):
                     annotation_clip=False, arrowprops=dict(arrowstyle="-", color=th["muted"], lw=0.8))  # fmt: skip
     ax.text(9.3, row[93.5] - 0.05, "someone else's 1.34M, also selling\nthe longshot", fontsize=9.6, color=th["muted"],
             va="center")  # fmt: skip
-    ax.text(-7.4, ys[-1] - 1.1, esc("Who would pay 90c+ for this? Nobody sane. But with SIG's thin books, every so often\n"
+    ax.text(-7.4, ys[-1] - 1.1, esc("Who would pay 90c+ for this? Nobody sane. But with thin books, every so often\n"
             "someone sweeps a whole side, and then the order at the front gets the fill."), color=th["ink2"], fontsize=9.8,
             va="top")  # fmt: skip
     save(fig, "book_ladder", mode)
@@ -433,30 +433,71 @@ def leaderboard(th, mode):
     others = [n for n in lb["series"] if n != ME]
     palette = [th["series"][i] for i in (0, 2, 6, 4)]
     me = np.array(lb["series"][ME], dtype=float)
+    after = {r[1]: [] for x in lb["after"] for r in x["rows"]}
+    for x in lb["after"]:
+        for r in x["rows"]:
+            after[r[1]].append((x["t"], r[2], r[0]))
+
+    def tail(n, col, lw):
+        """The board since the close: a few snapshots, joined to the end of the live series."""
+        s = lb["series"][n]
+        pts = [(s[-1][0], s[-1][1], s[-1][2]), *after.get(n, [])]
+        ax.plot([dt(t) for t, _, _ in pts], [v for _, v, _ in pts], color=col, lw=lw, ls=(0, (3, 1.5)))
+        return pts[-1]
+
     labels = []
     for i, n in enumerate(others):
         s = lb["series"][n]
         col = palette[i] if i < len(palette) else th["other"]
-        ax.plot(*broken([(t, v) for t, v, _ in s]), color=col, lw=1.7 if i < len(palette) else 1.1)
-        labels.append((s[-1][1], f"{int(s[-1][2])}. {n[:-5]}", col, "normal"))
+        w = 1.7 if i < len(palette) else 1.1
+        ax.plot(*broken([(t, v) for t, v, _ in s]), color=col, lw=w)
+        end = tail(n, col, w)
+        labels.append((end[1], f"{int(end[2])}. {n[:-5]}", col, "normal"))
     ax.plot(*broken([(t, v) for t, v, _ in lb["series"][ME]]), color=th["series"][1], lw=3, zorder=5)
-    labels.append((me[-1, 1], f"{int(me[-1, 2])}. us, on SIG's board", th["series"][1], "bold"))
+    me_end = tail(ME, th["series"][1], 3)
+    labels.append((me_end[1], f"{int(me_end[2])}. us, on the board", th["series"][1], "bold"))
     m = eq[:, 0] >= me[0, 0]
-    ax.plot([dt(x) for x in eq[m, 0]], eq[m, 1] - START, color=th["series"][1], lw=1.6, ls=(0, (1.5, 2)), zorder=4)
+    t_end = lb["after"][-1]["t"]
+    ax.plot([*[dt(x) for x in eq[m, 0]], dt(t_end)], [*(eq[m, 1] - START), eq[-1, 1] - START], color=th["series"][1],
+            lw=1.6, ls=(0, (1.5, 2)), zorder=4)  # fmt: skip
     labels.append((eq[-1, 1] - START, "us at fair value (what settles)", th["series"][1], "normal"))
-    t_end = max(s[-1][0] for s in lb["series"].values())
     for y, text, col, w in dodge(labels, 34_000):
         ax.text(dt(t_end + 3 * 3600), y, text, color=col, fontsize=9.6, weight=w, va="center")
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(money))
-    ax.set_title("The top of the leaderboard, last eleven days")
-    subtitle(ax, th, f"All-time P&L on SIG's board ({lb['accounts']:,} accounts). SIG values positions at a ~4h average price, so the board lags.")
+    ax.set_title("The top of the leaderboard, and the settlement that follows")
+    subtitle(ax, th, f"All-time P&L of the top accounts ({lb['accounts']:,} on the board). Open positions count at a ~4h average price, so the board lags.")
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=2, tz=UTC))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %d", tz=UTC))
-    ax.set_xlim(dt(me[0, 0]), dt(t_end + 86400 * 1.9))
+    ax.set_xlim(dt(me[0, 0]), dt(t_end + 86400 * 2.3))
     ax.annotate("steady-ember: one big bet on\nMS Senate D that came in", xy=(dt(utc(4, 9)), 800_000),
-                xytext=(dt(utc(1, 0)), 330_000), fontsize=9.6, color=th["ink2"], va="center",
+                xytext=(dt(utc(1, 0) - 2.5 * 86400), 420_000), fontsize=9.6, color=th["ink2"], va="center",
                 arrowprops=dict(arrowstyle="-", color=th["muted"], lw=0.8))  # fmt: skip
     save(fig, "leaderboard", mode)
+
+
+def standings(th, mode):
+    """Estimated final P&L from the reconstructed positions (simulation at Kalshi prices, see the write-up)."""
+    s = load("standings.json")
+    board = {r[1][:-5]: r[2] for r in load("leaderboard.json")["after"][-1]["rows"]}
+    board["us"] = board.pop(ME[:-5])
+    fig, ax = plt.subplots(figsize=(12, 3.9))
+    ys = list(range(len(s["accounts"]), 0, -1))
+    for y, a in zip(ys, s["accounts"], strict=True):
+        col = th["series"][a["series"]]
+        ax.plot([a["lo"], a["hi"]], [y, y], color=col, lw=9, alpha=0.32, solid_capstyle="round", zorder=2)
+        ax.scatter([a["mid"]], [y], s=74, color=col, edgecolor=th["surface"], lw=2, zorder=4)
+        ax.scatter([board[a["name"]]], [y], s=74, marker="D", facecolor=th["surface"], edgecolor=col, lw=1.8, zorder=4)
+        ax.text(a["mid"], y + 0.3, money(round(a["mid"], -4)), color=th["ink"], fontsize=10.5, weight="bold", ha="center")
+        ax.text(board[a["name"]], y + 0.3, money(round(board[a["name"]], -4)), color=th["ink2"], fontsize=9.6, ha="center")
+    ax.set_yticks(ys, [a["name"] for a in s["accounts"]])
+    ax.grid(axis="y", visible=False)
+    ax.spines["left"].set_visible(False)
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(money))
+    ax.set_xlim(1_240_000, 1_700_000)
+    ax.set_ylim(0.5, len(ys) + 0.75)
+    ax.set_title("First on the board, probably third at the end")
+    subtitle(ax, th, f"Diamond: the board on {s['as_of']}. Dot and bar: estimated final P&L, median and 90% range. Our own book is known, theirs are estimates.")
+    save(fig, "standings", mode)
 
 
 # ---------------------------------------------------------------- 6. per market
@@ -500,14 +541,14 @@ def markets(th, mode):
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(money))
     ax.grid(axis="y", visible=False)
     ax.set_title(f"{len(items)} markets, and only one cost us real money")
-    subtitle(ax, th, "Value of all our trades in each market at today's fairs. D/R: the Democratic or Republican contract.")
+    subtitle(ax, th, "Value of all our trades in each market at the final results. D/R: the Democratic or Republican contract.")
     ax.annotate("we bought 138k MN-01 R at 64.5c at 04:04 on election night\n(fair 75c). The race went the other way.",
                 xy=(val["1024"] / 2, y[-1]), xytext=(25_000, y[-1] + 0.9), fontsize=9.5, color=th["ink2"], va="center",
                 arrowprops=dict(arrowstyle="-", color=th["muted"], lw=0.8))  # fmt: skip
     save(fig, "markets", mode)
 
 
-FIGS = [equity_curve, daily, edge_buckets, fill_map, book_ladder, night, leaderboard, markets]
+FIGS = [equity_curve, daily, edge_buckets, fill_map, book_ladder, night, leaderboard, standings, markets]
 
 if __name__ == "__main__":
     want = set(sys.argv[1:])
